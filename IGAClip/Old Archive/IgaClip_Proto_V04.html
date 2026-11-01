@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IgaClip Proto_V04</title>
+<script src="mediabunny.cjs"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1a1d23;--sub:#667085;--ac:#e8590c;--bd:#d9dde3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121418;--card:#1c2027;--fg:#eceef2;--sub:#98a2b3;--bd:#2f3541}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Hiragino Sans","Yu Gothic",sans-serif;line-height:1.5}
+main{max-width:860px;margin:0 auto;padding:12px}
+h1{font-size:1.25rem;margin:0 0 10px}h1 span{color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+canvas{width:100%;max-height:50vh;object-fit:contain;background:#000;border-radius:8px;display:block;touch-action:none}
+button,.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:.95rem;cursor:pointer;margin:6px 6px 0 0;display:inline-block}
+button.sub{background:var(--bd);color:var(--fg)}button:disabled{opacity:.45}
+.row{display:flex;flex-wrap:wrap;align-items:center}.tm{margin-left:auto;color:var(--sub)}
+#tlw{overflow-x:auto;border:1px solid var(--bd);border-radius:8px;margin-top:8px;background:var(--bg)}
+#tl{position:relative;display:flex;height:64px;cursor:pointer}
+.clip{height:100%;box-sizing:border-box;background:#3b82f6;color:#fff;font-size:.75rem;padding:4px 6px;overflow:hidden;white-space:nowrap;border-right:2px solid var(--bg);flex:none}
+.clip.sel{outline:3px solid var(--ac);outline-offset:-3px}
+#al{position:relative;height:44px;border-top:1px solid var(--bd);cursor:pointer}
+.aclip{position:absolute;top:4px;height:36px;background:#10b981;color:#fff;font-size:.72rem;padding:2px 6px;box-sizing:border-box;border-radius:6px;overflow:hidden;white-space:nowrap}
+.aclip.sel{outline:3px solid var(--ac);outline-offset:-3px}
+#ph,#ph2{position:absolute;top:0;bottom:0;width:2px;background:#ef4444;pointer-events:none}
+label{font-size:.82rem;color:var(--sub);display:block;margin-top:8px}
+input[type=range]{width:100%}input[type=text]{width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font-size:1rem}
+input[type=color]{height:34px;width:60px}
+#st{font-size:.85rem;color:var(--sub);margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+<h1><span>IgaClip</span> Proto_V04</h1>
+<div class="card">
+<b>プロジェクト</b>
+<label>プロジェクト名(初期値は作成日)<input type="text" id="pn"></label>
+<button id="psave">💾 保存</button><label class="btn" style="background:var(--bd);color:var(--fg)">📂 読み込み<input type="file" id="pload" accept=".json,application/json" hidden></label>
+<a id="pdl" style="display:none;margin-top:8px"></a>
+<div id="rl" style="display:none;margin-top:8px"><span id="rlmsg" style="font-size:.85rem"></span><br><label class="btn">素材を選び直す<input type="file" id="rlfile" multiple accept="video/*,audio/*" hidden></label></div>
+</div>
+<div class="card">
+<canvas id="cv" width="640" height="360"></canvas>
+<div class="row">
+<label class="btn" style="margin-top:6px">＋ 動画<input type="file" id="file" accept="video/*" multiple hidden></label>
+<button id="play" class="sub">▶ 再生/停止</button><button id="split" class="sub">✂ 分割</button><button id="del" class="sub">🗑 削除</button><button id="left" class="sub">◀</button><button id="right" class="sub">▶</button>
+<span class="tm" id="tm">0.0 / 0.0</span>
+</div>
+<label>ズーム<input type="range" id="zoom" min="15" max="200" value="60"></label>
+<div id="tlw"><div id="tl"><div id="ph"></div></div><div id="al"><div id="ph2"></div></div></div>
+</div>
+<div class="card">
+<b>クリップ</b>
+<label>開始:<span id="sv">-</span> 秒<input type="range" id="s" min="0" max="1" step="0.1" disabled></label>
+<label>終了:<span id="ev">-</span> 秒<input type="range" id="e" min="0" max="1" step="0.1" disabled></label>
+</div>
+<div class="card">
+<b>テキスト</b>(プレビュー上をドラッグでも移動できます)<br>
+<button id="tadd">＋ テキスト追加</button><span id="tlist"></span>
+<label>内容<input type="text" id="tt" disabled></label>
+<label>横位置<input type="range" id="tx" min="0" max="1" step="0.01" disabled></label>
+<label>縦位置<input type="range" id="ty" min="0" max="1" step="0.01" disabled></label>
+<label>角度<input type="range" id="ta" min="-180" max="180" step="1" disabled></label>
+<label>サイズ<input type="range" id="tz" min="2" max="30" step="0.5" disabled></label>
+<label>表示開始(秒)<input type="range" id="t1" min="0" max="1" step="0.1" disabled></label>
+<label>表示終了(秒)<input type="range" id="t2" min="0" max="1" step="0.1" disabled></label>
+<label>色 <input type="color" id="tc" value="#ffffff" disabled></label>
+<button id="tdel" class="sub" disabled>🗑 このテキストを削除</button>
+</div>
+<div class="card">
+<b>BGM・音声</b><br>
+<label class="btn">＋ 音声を追加<input type="file" id="afile" accept="audio/*" multiple hidden></label>
+<label>元動画の音量<input type="range" id="vv" min="0" max="1" step="0.05" value="1"></label>
+<label>選択中の音声:音量<input type="range" id="av" min="0" max="1" step="0.05" value="1" disabled></label>
+<label>開始位置(秒)<input type="range" id="as" min="0" max="60" step="0.1" value="0" disabled></label>
+<label>フェード(秒)<input type="range" id="af" min="0" max="5" step="0.1" value="0" disabled></label>
+<button id="adel" class="sub" disabled>🗑 この音声を削除</button>
+</div>
+<div class="card">
+<b>書き出し</b>
+<label>ファイル名(.mp4は自動で付きます)<input type="text" id="fn" value="IgaClip_output"></label>
+<button id="exp" disabled>高速書き出し</button>
+<div id="st">動画を追加してください</div>
+<div id="diag" style="font-size:.8rem;color:var(--sub);margin-top:4px">診断中…</div>
+<a id="dl" style="display:none;margin-top:8px"></a>
+</div>
+<p style="font-size:.8rem;color:var(--sub)">高速書き出しはWebCodecs(MP4/H.264+AAC)を使います。書き出しライブラリ(mediabunny.cjs)をHTMLと同じフォルダに置くとオフラインで動きます。無い場合はネットから読み込みます。すべて端末内で処理されます。</p>
+</main>
+<script>
+const $=id=>document.getElementById(id),cv=$('cv'),ctx=cv.getContext('2d'),tl=$('tl'),al=$('al');
+let clips=[],auds=[],txs=[],sel=-1,asel=-1,tsel=-1,idx=0,playing=false,busy=false,pps=60,vol=1;
+const dur=c=>c.out-c.in,total=()=>clips.reduce((a,c)=>a+dur(c),0),fmt=t=>t.toFixed(1);
+const starts=()=>{let a=0;return clips.map(c=>{const s=a;a+=dur(c);return s})};
+const vid=()=>clips[idx]&&clips[idx].src.video,msg=t=>$('st').textContent=t;
+function curT(){const c=clips[idx];return c?starts()[idx]+Math.max(0,vid().currentTime-c.in):0}
+function drawTo(g,W,H,img,iw,ih,t){
+  g.fillStyle='#000';g.fillRect(0,0,W,H);
+  if(img){const k=Math.min(W/iw,H/ih);g.drawImage(img,(W-iw*k)/2,(H-ih*k)/2,iw*k,ih*k)}
+  for(const x of txs){if(t<x.s||t>x.e||!x.text)continue;
+    const fs=H*x.size/100;g.save();g.translate(x.x*W,x.y*H);g.rotate(x.a*Math.PI/180);
+    g.font='bold '+fs+'px sans-serif';g.textAlign='center';g.textBaseline='middle';g.lineWidth=fs/6;g.strokeStyle='#000';g.fillStyle=x.col;
+    g.strokeText(x.text,0,0);g.fillText(x.text,0,0);g.restore()}
+}
+$('file').onchange=async e=>{
+  for(const f of e.target.files){
+    const v=document.createElement('video');v.playsInline=true;v.preload='auto';v.volume=vol;v.src=URL.createObjectURL(f);
+    await new Promise(r=>v.onloadedmetadata=r);
+    const src={video:v,file:f,dur:v.duration,w:v.videoWidth,h:v.videoHeight,name:f.name};
+    if(!clips.length){const k=Math.min(1,1280/src.w);cv.width=Math.round(src.w*k/2)*2;cv.height=Math.round(src.h*k/2)*2}
+    clips.push({src,in:0,out:src.dur});
+  }
+  e.target.value='';if(sel<0){sel=0;idx=0}$('exp').disabled=false;msg(clips.length+'個のクリップ');render();
+};
+function render(){
+  tl.querySelectorAll('.clip').forEach(n=>n.remove());
+  clips.forEach((c,i)=>{const d=document.createElement('div');d.className='clip'+(i===sel?' sel':'');
+    d.style.width=dur(c)*pps+'px';d.innerHTML=c.src.name.replace(/</g,'&lt;')+'<br>'+fmt(dur(c))+'秒';tl.insertBefore(d,$('ph'))});
+  renderA();const c=clips[sel],on=!!c;
+  for(const id of['s','e'])$(id).disabled=!on;
+  if(on){$('s').max=$('e').max=c.src.dur;$('s').value=c.in;$('e').value=c.out;$('sv').textContent=fmt(c.in);$('ev').textContent=fmt(c.out)}
+  renderT();updHead();
+}
+function updHead(){const t=curT();$('ph').style.left=$('ph2').style.left=t*pps+'px';$('tm').textContent=fmt(t)+' / '+fmt(total())}
+function pauseAll(){clips.forEach(c=>c.src.video.pause());auds.forEach(a=>a.el.pause())}
+function seek(t){
+  if(!clips.length)return;t=Math.max(0,Math.min(t,total()-0.01));
+  const st=starts();let i=st.findIndex((s,k)=>t>=s&&t<s+dur(clips[k]));if(i<0)i=clips.length-1;
+  if(i!==idx)vid().pause();idx=sel=i;vid().currentTime=clips[i].in+t-st[i];if(playing)vid().play();render();
+}
+tl.onclick=e=>seek((e.clientX-tl.getBoundingClientRect().left)/pps);
+al.onclick=e=>seek((e.clientX-tl.getBoundingClientRect().left)/pps);
+$('zoom').oninput=e=>{pps=+e.target.value;render()};
+function next(){
+  const c=clips[idx],v=vid();
+  if(idx+1<clips.length){const n=clips[idx+1];idx++;sel=idx;
+    if(!(n.src===c.src&&Math.abs(n.in-c.out)<0.1)){v.pause();n.src.video.currentTime=n.in}
+    if(playing)n.src.video.play();render()}
+  else{playing=false;v.pause()}
+}
+function syncAudio(){
+  const t=curT();
+  for(const a of auds){
+    const rel=t-a.start,on=playing&&rel>=0&&rel<a.len,el=a.el;
+    if(on){const f=a.fade;el.volume=Math.max(0,Math.min(1,a.vol*Math.min(1,f?rel/f:1,f?(a.len-rel)/f:1)));
+      if(el.paused){el.currentTime=rel;el.play()}else if(Math.abs(el.currentTime-rel)>0.35)el.currentTime=rel}
+    else if(!el.paused)el.pause();
+  }
+}
+function loop(){
+  const c=clips[idx];
+  if(c&&playing&&vid().currentTime>=c.out-0.04)next();
+  syncAudio();
+  if(!busy)drawTo(ctx,cv.width,cv.height,c?vid():null,c?c.src.w:1,c?c.src.h:1,curT());
+  updHead();requestAnimationFrame(loop);
+}
+loop();
+$('play').onclick=()=>{
+  if(!clips.length)return;
+  if(playing){playing=false;pauseAll()}else{if(curT()>=total()-0.05)seek(0);playing=true;vid().play()}
+};
+$('split').onclick=()=>{
+  const c=clips[idx];if(!c)return;const t=vid().currentTime;
+  if(t<=c.in+0.1||t>=c.out-0.1){msg('端に近すぎて分割できません');return}
+  clips.splice(idx+1,0,{src:c.src,in:t,out:c.out});c.out=t;render();
+};
+$('del').onclick=()=>{if(sel<0)return;playing=false;pauseAll();clips.splice(sel,1);idx=sel=Math.min(sel,clips.length-1);if(clips.length)seek(starts()[idx]);else render()};
+function move(d){const j=sel+d;if(sel<0||j<0||j>=clips.length)return;[clips[sel],clips[j]]=[clips[j],clips[sel]];sel=idx=j;render()}
+$('left').onclick=()=>move(-1);$('right').onclick=()=>move(1);
+$('s').oninput=e=>{const c=clips[sel];c.in=Math.min(+e.target.value,c.out-0.2);render();seek(starts()[sel])};
+$('e').oninput=e=>{const c=clips[sel];c.out=Math.max(+e.target.value,c.in+0.2);render();seek(starts()[sel]+dur(c)-0.1)};
+/* テキスト */
+function renderT(){
+  const L=$('tlist');L.innerHTML='';
+  txs.forEach((x,i)=>{const b=document.createElement('button');b.className=i===tsel?'':'sub';b.textContent=x.text||'(空)';b.onclick=()=>{tsel=i;renderT()};L.appendChild(b)});
+  const x=txs[tsel],on=!!x;
+  for(const id of['tt','tx','ty','ta','tz','tc','t1','t2','tdel'])$(id).disabled=!on;
+  if(on){$('tt').value=x.text;$('tx').value=x.x;$('ty').value=x.y;$('ta').value=x.a;$('tz').value=x.size;$('tc').value=x.col;$('t1').max=$('t2').max=Math.max(total(),1);$('t1').value=x.s;$('t2').value=x.e}
+}
+$('tadd').onclick=()=>{const t=curT();txs.push({text:'テキスト',x:.5,y:.8,a:0,size:8,col:'#ffffff',s:t,e:t+3});tsel=txs.length-1;renderT()};
+for(const[id,k,n]of[['tt','text'],['tx','x',1],['ty','y',1],['ta','a',1],['tz','size',1],['tc','col'],['t1','s',1],['t2','e',1]])
+  $(id).oninput=e=>{txs[tsel][k]=n?+e.target.value:e.target.value;if(id==='tt')renderT()};
+$('tdel').onclick=()=>{txs.splice(tsel,1);tsel=Math.min(tsel,txs.length-1);renderT()};
+let drag=false;
+function dragTo(e){const x=txs[tsel];if(!drag||!x)return;const r=cv.getBoundingClientRect();
+  x.x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));x.y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));$('tx').value=x.x;$('ty').value=x.y}
+cv.onpointerdown=e=>{drag=true;cv.setPointerCapture(e.pointerId);dragTo(e)};cv.onpointermove=dragTo;cv.onpointerup=()=>drag=false;
+/* 音声 */
+$('afile').onchange=async e=>{
+  for(const f of e.target.files){
+    const el=new Audio();el.preload='auto';el.src=URL.createObjectURL(f);await new Promise(r=>el.onloadedmetadata=r);
+    auds.push({el,file:f,name:f.name,start:0,len:el.duration,vol:1,fade:0});asel=auds.length-1;
+  }
+  e.target.value='';renderA();
+};
+function renderA(){
+  al.querySelectorAll('.aclip').forEach(n=>n.remove());
+  auds.forEach((a,i)=>{const d=document.createElement('div');d.className='aclip'+(i===asel?' sel':'');
+    d.style.left=a.start*pps+'px';d.style.width=a.len*pps+'px';d.textContent='♪ '+a.name;
+    d.onclick=ev=>{ev.stopPropagation();asel=i;renderA()};al.insertBefore(d,$('ph2'))});
+  tl.style.width=al.style.width=(Math.max(total(),...auds.map(a=>a.start+a.len))*pps+60)+'px';
+  const a=auds[asel],on=!!a;
+  for(const id of['av','as','af','adel'])$(id).disabled=!on;
+  if(on){$('av').value=a.vol;$('af').value=a.fade;$('as').max=Math.max(total(),1);$('as').value=a.start}
+}
+$('av').oninput=e=>{auds[asel].vol=+e.target.value};
+$('as').oninput=e=>{auds[asel].start=+e.target.value;renderA()};
+$('af').oninput=e=>{auds[asel].fade=+e.target.value};
+$('adel').onclick=()=>{const a=auds[asel];if(!a)return;a.el.pause();auds.splice(asel,1);asel=Math.min(asel,auds.length-1);renderA()};
+$('vv').oninput=e=>{vol=+e.target.value;clips.forEach(c=>c.src.video.volume=vol)};
+let M=window.Mediabunny,libErr='',libSrc=window.Mediabunny?'ローカルファイル':'ネット(CDN)';
+async function loadLib(){
+  if(M)return M;
+  try{M=await import('https://cdn.jsdelivr.net/npm/mediabunny@1.50.8/+esm')}catch(e){libErr=e.message||String(e)}
+  return M;
+}
+(async()=>{await loadLib();$('diag').textContent='診断:ライブラリ='+(M?'OK('+libSrc+')':'失敗('+libErr+')')+' / WebCodecs='+(typeof VideoEncoder!=='undefined'?'OK':'非対応')+' / 安全なコンテキスト='+isSecureContext})();
+/* プロジェクト */
+let created=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})(),pending=null;
+$('pn').value=created;
+const safe=s=>(s.trim().replace(/[\\/:*?"<>|]/g,'_'))||created;
+async function saveBlob(blob,name,a){
+  const C=window.Capacitor;
+  if(C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins&&C.Plugins.Filesystem){
+    try{const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(blob)});
+      await C.Plugins.Filesystem.writeFile({path:'IgaClip/'+name,data:b64,directory:'DOCUMENTS',recursive:true});
+      msg('保存しました:Documents/IgaClip/'+name);return}catch(e){msg('端末への保存に失敗:'+e.message)}
+  }
+  a.href=URL.createObjectURL(blob);a.download=name;a.textContent='⬇ '+name+' を保存';a.style.display='inline-block';
+}
+async function mkV(f){const v=document.createElement('video');v.playsInline=true;v.preload='auto';v.volume=vol;v.src=URL.createObjectURL(f);await new Promise(r=>v.onloadedmetadata=r);return{video:v,file:f,dur:v.duration,w:v.videoWidth,h:v.videoHeight,name:f.name}}
+async function mkA(f){const el=new Audio();el.preload='auto';el.src=URL.createObjectURL(f);await new Promise(r=>el.onloadedmetadata=r);return{el,file:f,name:f.name}}
+$('psave').onclick=async()=>{
+  const media=[],mi=(o,k)=>{let i=media.findIndex(m=>m.name===o.name&&m.size===o.file.size&&m.k===k);if(i<0)i=media.push({name:o.name,size:o.file.size,k})-1;return i};
+  const d={app:'IgaClip',ver:4,name:$('pn').value,created,fn:$('fn').value,vol,w:cv.width,h:cv.height,
+    clips:clips.map(c=>({m:mi(c.src,'v'),in:c.in,out:c.out})),
+    auds:auds.map(a=>({m:mi(a,'a'),start:a.start,len:a.len,vol:a.vol,fade:a.fade})),txs};
+  d.media=media;const nm=safe($('pn').value)+'.igaclip.json';
+  await saveBlob(new Blob([JSON.stringify(d,null,1)],{type:'application/json'}),nm,$('pdl'));
+  if($('pdl').download===nm)$('pdl').click();else msg('プロジェクトを保存しました');
+};
+$('pload').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{pending=JSON.parse(await f.text());if(pending.app!=='IgaClip')throw 0}catch{msg('プロジェクトファイルを読めません');return}
+  if(!pending.media.length){await applyProject(pending,[]);return}
+  $('rlmsg').textContent='必要な素材を選んでください:'+pending.media.map(m=>m.name).join(' / ');$('rl').style.display='block';
+};
+$('rlfile').onchange=async e=>{const ok=await applyProject(pending,[...e.target.files]);e.target.value='';if(ok)$('rl').style.display='none'};
+async function applyProject(d,files){
+  if(!d)return false;
+  const map=d.media.map(m=>files.find(f=>f.name===m.name&&f.size===m.size));
+  const miss=d.media.filter((m,i)=>!map[i]).map(m=>m.name);
+  if(miss.length){msg('見つからない素材:'+miss.join(' / '));return false}
+  playing=false;pauseAll();msg('読み込み中…');
+  const S=[];for(let i=0;i<d.media.length;i++)S[i]=d.media[i].k==='v'?await mkV(map[i]):await mkA(map[i]);
+  vol=d.vol??1;$('vv').value=vol;S.forEach(x=>{if(x.video)x.video.volume=vol});
+  clips=d.clips.map(c=>({src:S[c.m],in:c.in,out:c.out}));
+  auds=d.auds.map(a=>({...S[a.m],start:a.start,len:a.len,vol:a.vol,fade:a.fade}));
+  txs=d.txs||[];tsel=txs.length?0:-1;asel=auds.length?0:-1;sel=clips.length?0:-1;idx=0;
+  cv.width=d.w;cv.height=d.h;$('pn').value=d.name||d.created;created=d.created||created;$('fn').value=d.fn||'IgaClip_output';
+  $('exp').disabled=!clips.length;render();if(clips.length)seek(0);msg('プロジェクトを読み込みました');return true;
+}
+/* 高速書き出し */
+$('exp').onclick=async()=>{
+  if(!clips.length)return;
+  await loadLib();if(!M){msg('ライブラリ読込失敗:'+libErr);return}
+  if(typeof VideoEncoder==='undefined'){msg('このブラウザはWebCodecs(VideoEncoder)に対応していません');return}
+  busy=true;playing=false;pauseAll();$('exp').disabled=true;$('dl').style.display='none';
+  try{
+    const fps=30,W=cv.width,H=cv.height,T=total(),st0=starts(),oc=document.createElement('canvas');oc.width=W;oc.height=H;const og=oc.getContext('2d');
+    const out=new M.Output({format:new M.Mp4OutputFormat(),target:new M.BufferTarget()});
+    const vs=new M.CanvasSource(oc,{codec:'avc',bitrate:8e6});out.addVideoTrack(vs,{frameRate:fps});
+    const as=new M.AudioBufferSource({codec:'aac',bitrate:192e3});out.addAudioTrack(as);
+    await out.start();
+    for(let i=0;i<clips.length;i++){
+      const c=clips[i],track=await new M.Input({source:new M.BlobSource(c.src.file),formats:M.ALL_FORMATS}).getPrimaryVideoTrack();
+      const sink=new M.CanvasSink(track,{width:Math.min(c.src.w,W)});
+      const cnt=Math.floor(dur(c)*fps),ts=Array.from({length:cnt},(_,k)=>c.in+k/fps);let k=0;
+      for await(const f of sink.canvasesAtTimestamps(ts)){
+        const t=st0[i]+k/fps,im=f&&f.canvas;
+        drawTo(og,W,H,im,im?im.width:1,im?im.height:1,t);await vs.add(t,1/fps);k++;
+        if(k%10===0)msg('映像を書き出し中 '+Math.round(t/T*100)+'%');
+      }
+    }
+    msg('音声を合成中…');
+    const SR=48000,oa=new OfflineAudioContext(2,Math.ceil(T*SR),SR);
+    const dec=async o=>{if(!o.buf){try{o.buf=await oa.decodeAudioData(await o.file.arrayBuffer())}catch{o.buf=1}}return o.buf};
+    for(let i=0;i<clips.length;i++){
+      const b=await dec(clips[i].src);if(b===1)continue;
+      const s=oa.createBufferSource(),g=oa.createGain();s.buffer=b;g.gain.value=vol;s.connect(g).connect(oa.destination);s.start(st0[i],clips[i].in,dur(clips[i]));
+    }
+    for(const a of auds){
+      if(a.start>=T)continue;const b=await dec(a);if(b===1)continue;
+      const s=oa.createBufferSource(),g=oa.createGain(),len=Math.min(a.len,T-a.start);s.buffer=b;
+      if(a.fade){g.gain.setValueAtTime(0,a.start);g.gain.linearRampToValueAtTime(a.vol,a.start+a.fade);g.gain.setValueAtTime(a.vol,Math.max(a.start+a.fade,a.start+len-a.fade));g.gain.linearRampToValueAtTime(0,a.start+len)}
+      else g.gain.value=a.vol;
+      s.connect(g).connect(oa.destination);s.start(a.start,0,len);
+    }
+    await as.add(await oa.startRendering());
+    vs.close();as.close();await out.finalize();
+    const name=($('fn').value.trim()||'IgaClip_output').replace(/[\\/:*?"<>|]/g,'_')+'.mp4';
+    await saveBlob(new Blob([out.target.buffer],{type:'video/mp4'}),name,$('dl'));
+    msg('完了!'+(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()?' Documents/IgaClipに保存しました':''));
+  }catch(err){msg('エラー:'+err.name+' / '+err.message);console.error(err)}
+  finally{busy=false;$('exp').disabled=false;seek(0)}
+};
+</script>
+</body>
+</html>
