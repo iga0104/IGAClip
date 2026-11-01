@@ -100,7 +100,7 @@ IGAClipは現在開発中です。
 現在、Windows版（.exe）およびAndroid版（.apk）、WEB版 (.html)の準備を進めています。
 
 **2026/11/01の最新アップデート**
-- Android版　(.apk)[ダウンロード](Releases/Latest%20Version/.APK\igaclip_v11_test.apk)
+- Android版　(.apk)[ダウンロード](Releases/Latest%20Version/.APK/igaclip_v11_test.apk)
 
 - Windows版　(.exe)[準備中]
 
